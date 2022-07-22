@@ -83,9 +83,9 @@ class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     ImageUpdate2 = pyqtSignal(QImage)       
     def run(self,
-            weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
+            weights= 'runs/train/Lots/weights/best.pt',  # model.pt path(s)
             source=0,  # file/dir/URL/glob, 0 for webcam
-            data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
+            data=ROOT / 'data/data.yaml',  # dataset.yaml path
             imgsz=(640, 640),  # inference size (height, width)
             conf_thres=0.5,  # confidence threshold
             iou_thres=0.45,  # NMS IOU threshold
@@ -153,7 +153,7 @@ class Worker1(QThread):
             else:
                 global curr_img
                 curr = "C:/Users/NakaMura/Downloads/iris-recognition-master (1)/iris-recognition-master/temp"
-                print(curr_image)
+                #print(curr_image)
                 data2 = LoadImages(curr, img_size=imgsz, stride=stride, auto=pt)
                 for path1, im1, im0s1, vid_cap1, s1 in data2:
                     im = torch.from_numpy(im1).to(device)
@@ -178,7 +178,7 @@ class Worker1(QThread):
 
             # Second-stage classifier (optional)
             # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
-            print(pred)
+            #print(pred)
             # Process predictions
             for i, det in enumerate(pred):  # per image
                 seen += 1
@@ -188,6 +188,7 @@ class Worker1(QThread):
                 else:
                     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
                 im0 = cv2.flip(im0, 1)
+                im0 = cv2.cvtColor(im_cv, cv2.COLOR_BGR2RGB)
                 FlippedImage = im0
                 #FlippedImage = cv2.flip(im0, 1)
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
@@ -209,7 +210,7 @@ class Worker1(QThread):
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
                         s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-
+                        
                     # Write results
                     for *xyxy, conf, cls in reversed(det):
                         if save_txt:  # Write to file
@@ -221,6 +222,7 @@ class Worker1(QThread):
                         if save_img or save_crop or view_img:  # Add bbox to image
                             c = int(cls)  # integer class
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
+                            print(str(names[int(c)]) + " " + str(conf))
                             annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
@@ -262,7 +264,7 @@ class Worker1(QThread):
                         #vid_writer[i].write(im0)
 
             # Print time (inference-only)
-            LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
+            #LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
 
         # Print results
         t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
@@ -319,7 +321,7 @@ class Ui_Dialog(object):
         self.tableWidget.setHorizontalHeaderLabels(headers)
         #for x in range(len(headers)):
         #    self.tableWidget.insertColumn(headers[x])
-        labels = ["agaricus campestris", "alternaria brassicicola"]
+        labels = ['agaricus abruptibulbus', 'agaricus auricolor', 'agaricus brunneofibrillosus', 'agaricus californicus', 'agaricus crocodilinus', 'agaricus fissuratus', 'agaricus julius', 'agaricus kriegeri', 'agaricus nanaugustus', 'agaricus placomyces', 'Alternaria alternata', 'Bipolaris zeicola', 'Caloboletus inedulis', 'Calostoma cinnabarinum', 'Lycoperdon pulcherrimum', 'Pisolithus arenarius', 'Spongipellis unicolor']
         row = len(labels)
         for y in range(row):
             self.tableWidget.insertRow(y)
@@ -353,7 +355,7 @@ class Ui_Dialog(object):
         self.tableWidget_2.setHorizontalHeaderLabels(headers)
         #for x in range(len(headers)):
         #    self.tableWidget_2.insertColumn(headers[x])
-        labels = ["agaricus campestris", "alternaria brassicicola"]
+        labels = ['agaricus abruptibulbus', 'agaricus auricolor', 'agaricus brunneofibrillosus', 'agaricus californicus', 'agaricus crocodilinus', 'agaricus fissuratus', 'agaricus julius', 'agaricus kriegeri', 'agaricus nanaugustus', 'agaricus placomyces', 'Alternaria alternata', 'Bipolaris zeicola', 'Caloboletus inedulis', 'Calostoma cinnabarinum', 'Lycoperdon pulcherrimum', 'Pisolithus arenarius', 'Spongipellis unicolor']
         row = len(labels)
         for y in range(row):
             self.tableWidget_2.insertRow(y)

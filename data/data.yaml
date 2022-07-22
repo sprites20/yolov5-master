@@ -1,0 +1,5 @@
+train: ./train_5/images
+val: ./train_5/images
+
+nc: 17
+names: ['agaricus abruptibulbus', 'agaricus auricolor', 'agaricus brunneofibrillosus', 'agaricus californicus', 'agaricus crocodilinus', 'agaricus fissuratus', 'agaricus julius', 'agaricus kriegeri', 'agaricus nanaugustus', 'agaricus placomyces', 'Alternaria alternata', 'Bipolaris zeicola', 'Caloboletus inedulis', 'Calostoma cinnabarinum', 'Lycoperdon pulcherrimum', 'Pisolithus arenarius', 'Spongipellis unicolor']
