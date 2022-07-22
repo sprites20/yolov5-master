@@ -84,8 +84,10 @@ class Worker1(QThread):
     ImageUpdate2 = pyqtSignal(QImage)       
     def run(self,
             weights= 'runs/train/Lots/weights/best.pt',  # model.pt path(s)
+            #weights= 'yolov5s.pt',  # model.pt path(s)
             source=0,  # file/dir/URL/glob, 0 for webcam
             data=ROOT / 'data/data.yaml',  # dataset.yaml path
+            #data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
             imgsz=(640, 640),  # inference size (height, width)
             conf_thres=0.5,  # confidence threshold
             iou_thres=0.45,  # NMS IOU threshold

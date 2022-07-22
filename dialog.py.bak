@@ -83,9 +83,11 @@ class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     ImageUpdate2 = pyqtSignal(QImage)       
     def run(self,
-            weights= 'runs/train/Lots/weights/best.pt',  # model.pt path(s)
+            #weights= 'runs/train/Lots/weights/best.pt',  # model.pt path(s)
+            weights= 'yolov5s.pt',  # model.pt path(s)
             source=0,  # file/dir/URL/glob, 0 for webcam
-            data=ROOT / 'data/data.yaml',  # dataset.yaml path
+            #data=ROOT / 'data/data.yaml',  # dataset.yaml path
+            data=ROOT / 'data/coco128.yaml',  # dataset.yaml path
             imgsz=(640, 640),  # inference size (height, width)
             conf_thres=0.5,  # confidence threshold
             iou_thres=0.45,  # NMS IOU threshold
@@ -188,7 +190,7 @@ class Worker1(QThread):
                 else:
                     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
                 im0 = cv2.flip(im0, 1)
-                im0 = cv2.cvtColor(im_cv, cv2.COLOR_BGR2RGB)
+                im0 = cv2.cvtColor(im0, cv2.COLOR_BGR2RGB)
                 FlippedImage = im0
                 #FlippedImage = cv2.flip(im0, 1)
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
