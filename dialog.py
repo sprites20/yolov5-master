@@ -81,7 +81,8 @@ class ImageDropBox(QtWidgets.QLabel):
 class Worker1(QThread):
     opt = ""
     ImageUpdate = pyqtSignal(QImage)
-    ImageUpdate2 = pyqtSignal(QImage)       
+    ImageUpdate2 = pyqtSignal(QImage)
+    countarr2 = pyqtSignal(object)
     def run(self,
             weights= 'runs/train/Lots/weights/best.pt',  # model.pt path(s)
             #weights= 'yolov5s.pt',  # model.pt path(s)
@@ -145,6 +146,7 @@ class Worker1(QThread):
         # Run inference
         model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
         dt, seen = [0.0, 0.0, 0.0], 0
+        pred3 = ""
         for path, im, im0s, vid_cap, s in dataset:
             t1 = time_sync()
             
@@ -189,7 +191,7 @@ class Worker1(QThread):
                     s += f'{i}: '
                 else:
                     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
-                im0 = cv2.flip(im0, 1)
+                #im0 = cv2.flip(im0, 1)
                 im0 = cv2.cvtColor(im0, cv2.COLOR_BGR2RGB)
                 FlippedImage = im0
                 #FlippedImage = cv2.flip(im0, 1)
@@ -212,7 +214,7 @@ class Worker1(QThread):
                     for c in det[:, -1].unique():
                         n = (det[:, -1] == c).sum()  # detections per class
                         s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
-                        
+                    pred2 = {}
                     # Write results
                     for *xyxy, conf, cls in reversed(det):
                         if save_txt:  # Write to file
@@ -224,11 +226,25 @@ class Worker1(QThread):
                         if save_img or save_crop or view_img:  # Add bbox to image
                             c = int(cls)  # integer class
                             label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                            print(str(names[int(c)]) + " " + str(conf))
+                            #print(str(names[int(c)]) + " " + str(conf))
+                            if not names[int(c)] in pred2:
+                                pred2[names[int(c)]] = 0
+                            pred2[names[int(c)]] += 1
                             annotator.box_label(xyxy, label, color=colors(c, True))
                         if save_crop:
                             save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
-
+                    labels = ['agaricus abruptibulbus', 'agaricus auricolor', 'agaricus brunneofibrillosus', 'agaricus californicus', 'agaricus crocodilinus', 'agaricus fissuratus', 'agaricus julius', 'agaricus kriegeri', 'agaricus nanaugustus', 'agaricus placomyces', 'Alternaria alternata', 'Bipolaris zeicola', 'Caloboletus inedulis', 'Calostoma cinnabarinum', 'Lycoperdon pulcherrimum', 'Pisolithus arenarius', 'Spongipellis unicolor']
+                    
+                    len2 = len(labels)
+                    countarr = [0] * len(labels)
+                    for q in range(0,len2):
+                        if labels[q] in pred2:
+                            countarr[q] = pred2[labels[q]]
+                    print(countarr)
+                    self.countarr2.emit(countarr)
+                    print(pred2)
+                    
+                
                 # Stream results
 
                 
@@ -347,6 +363,13 @@ class Ui_Dialog(object):
         #for y in range(row):
         #    for x in range(col):
         #        self.tableWidget.setCellWidget(y, x, self.tableWidget)
+        
+    def updateTable2(self, count):
+        len2 = len(count)
+        for y in range(0,len2):
+            item = QtWidgets.QTableWidgetItem(str(count[y]))
+            item.setFlags( QtCore.Qt.ItemIsSelectable |  QtCore.Qt.ItemIsEnabled)
+            self.tableWidget_2.setItem(y, 1, item)
     def setTable2(self):
         col, row = self.col, self.row
         print(col, row)
@@ -393,6 +416,7 @@ class Ui_Dialog(object):
         self.Worker1.start()
         self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
         self.Worker1.ImageUpdate2.connect(self.ImageUpdateSlot2)
+        self.Worker1.countarr2.connect(self.updateTable2)
 
     def ImageUpdateSlot(self, Image):
         self.label_2.setPixmap(QPixmap.fromImage(Image))
@@ -632,7 +656,7 @@ class Ui_Dialog(object):
         self.lblOutput.setText(_translate("Dialog", "O U T P U T"))
         self.browse_2.setText(_translate("Dialog", "Process"))
         self.lblInput_3.setText(_translate("Dialog", "Fungi Label: Sample"))
-        self.lblInput_4.setText(_translate("Dialog", "YOLOv5-based Identification of Fungi by Spores"))
+        self.lblInput_4.setText(_translate("Dialog", "Microbe Counter"))
         self.lblInput_2.setText(_translate("Dialog", "E X P E C T E D"))
         self.lblInput_5.setText(_translate("Dialog", "C O U N T"))
         self.lblInput_6.setText(_translate("Dialog", "R E S U L T"))
