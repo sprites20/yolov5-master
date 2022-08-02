@@ -27,6 +27,8 @@ if str(ROOT) not in sys.path:
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
 curr_image = None
+img_path = ""
+topath = False
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadStreams
@@ -40,8 +42,6 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 
 @torch.no_grad()
-
-
 
 class ImageDropBox(QtWidgets.QLabel):
     def __init__(self, parent=None):
@@ -69,6 +69,10 @@ class ImageDropBox(QtWidgets.QLabel):
             event.setDropAction(Qt.CopyAction)
             file_path = event.mimeData().urls()[0].toLocalFile()
             self.set_image(file_path)
+            global img_path
+            global topath
+            topath = True
+            img_path = file_path
 
             event.accept()
         else:
@@ -79,6 +83,8 @@ class ImageDropBox(QtWidgets.QLabel):
         self.setPixmap(QPixmap(file_path))
         
 class Worker1(QThread):
+    global topath
+    global img_path
     opt = ""
     ImageUpdate = pyqtSignal(QImage)
     ImageUpdate2 = pyqtSignal(QImage)
@@ -98,7 +104,7 @@ class Worker1(QThread):
             save_txt=False,  # save results to *.txt
             save_conf=False,  # save confidences in --save-txt labels
             save_crop=False,  # save cropped prediction boxes
-            nosave=False,  # do not save images/videos
+            nosave=True,  # do not save images/videos
             classes=None,  # filter by class: --class 0, or --class 0 2 3
             agnostic_nms=False,  # class-agnostic NMS
             augment=False,  # augmented inference
@@ -136,40 +142,47 @@ class Worker1(QThread):
         if webcam:
             view_img = check_imshow()
             cudnn.benchmark = True  # set True to speed up constant image size inference
-            dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
-            bs = len(dataset)  # batch_size
+            if topath:
+                im2 = cv2.imread(img_path)
+                cv2.imwrite("selectedimage/1.jpg", im2)
+                dataset = LoadImages("selectedimage", img_size=imgsz, stride=stride, auto=pt)
+                bs = 1  # batch_size
+                print(topath, "First To Path")
+            else:
+                dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
+                bs = len(dataset)  # batch_size
         else:
-            dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
-            bs = 1  # batch_size
+            if topath:
+                im2 = cv2.imread(img_path)
+                cv2.imwrite("selectedimage/1.jpg", im2)
+                dataset = LoadImages("selectedimage", img_size=imgsz, stride=stride, auto=pt)
+                bs = 1  # batch_size
+                print(topath, "First To Path")
+            else:
+                dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
+                bs = 1  # batch_size
         vid_path, vid_writer = [None] * bs, [None] * bs
-
+        
         # Run inference
         model.warmup(imgsz=(1 if pt else bs, 3, *imgsz))  # warmup
         dt, seen = [0.0, 0.0, 0.0], 0
         pred3 = ""
         for path, im, im0s, vid_cap, s in dataset:
+            print(dataset)
             t1 = time_sync()
-            
-            webOn = True
-            if webOn:
-                #print(im)
-                im = torch.from_numpy(im).to(device)
-            else:
-                global curr_img
-                curr = "C:/Users/NakaMura/Downloads/iris-recognition-master (1)/iris-recognition-master/temp"
-                #print(curr_image)
-                data2 = LoadImages(curr, img_size=imgsz, stride=stride, auto=pt)
-                for path1, im1, im0s1, vid_cap1, s1 in data2:
-                    im = torch.from_numpy(im1).to(device)
-                    path, im0s, vid_cap, s = path1, im0s1, vid_cap1, s1
-                
+            """
+            if topath:
+                im = cv2.imread(img_path)
+                im = im.permute(0, 4, 1, 2, 3)
+            """
+            im = torch.from_numpy(im).to(device)
             im = im.half() if model.fp16 else im.float()  # uint8 to fp16/32
             im /= 255  # 0 - 255 to 0.0 - 1.0
             if len(im.shape) == 3:
                 im = im[None]  # expand for batch dim
             t2 = time_sync()
             dt[0] += t2 - t1
-
+            
             # Inference
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
             pred = model(im, augment=augment, visualize=visualize)
@@ -192,7 +205,11 @@ class Worker1(QThread):
                 else:
                     p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
                 #im0 = cv2.flip(im0, 1)
+                
+                if topath:
+                    im0 = cv2.imread(img_path)
                 im0 = cv2.cvtColor(im0, cv2.COLOR_BGR2RGB)
+                
                 FlippedImage = im0
                 #FlippedImage = cv2.flip(im0, 1)
                 ConvertToQtFormat = QImage(FlippedImage.data, FlippedImage.shape[1], FlippedImage.shape[0], QImage.Format_RGB888)
@@ -259,7 +276,7 @@ class Worker1(QThread):
                 self.ImageUpdate.emit(Pic)
                 
                 if view_img:
-                    cv2.imshow(str(p), im0)
+                    #cv2.imshow(str(p), im0)
                     cv2.waitKey(1)  # 1 millisecond
 
                 # Save results (image with detections)
@@ -423,8 +440,12 @@ class Ui_Dialog(object):
         
     def ImageUpdateSlot2(self, Image):
         self.label_3.setPixmap(QPixmap.fromImage(Image))
-        
+    
+    def topathtofalse(self):
+        global topath
+        topath = False
     def setupUIAdditions(self):
+        self.browse_2.clicked.connect(lambda: self.topathtofalse())
         self.initializeWidget()
         
     def setupUi(self, Dialog):
@@ -654,7 +675,7 @@ class Ui_Dialog(object):
         self.browse.setText(_translate("Dialog", "Browse"))
         self.lblInput.setText(_translate("Dialog", "I N P U T"))
         self.lblOutput.setText(_translate("Dialog", "O U T P U T"))
-        self.browse_2.setText(_translate("Dialog", "Process"))
+        self.browse_2.setText(_translate("Dialog", "Reset"))
         self.lblInput_3.setText(_translate("Dialog", "Fungi Label: Sample"))
         self.lblInput_4.setText(_translate("Dialog", "Microbe Counter"))
         self.lblInput_2.setText(_translate("Dialog", "E X P E C T E D"))
